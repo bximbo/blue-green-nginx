@@ -1,0 +1,60 @@
+# v2+ says no need to declare the version
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+    - "${NGINX_PORT}:80"
+    environment:
+      - ACTIVE_POOL=${ACTIVE_POOL}
+      - RELEASE_ID_BLUE=${RELEASE_ID_BLUE}
+      - RELEASE_ID_GREEN=${RELEASE_ID_GREEN}
+    volumes:
+      - ./nginx/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      - app_blue
+     #   condition: service_healthy
+      - app_green
+      #  condition: service_healthy
+    restart: always
+
+  app_blue:
+    image: ${BLUE_IMAGE}
+    platform: linux/amd64
+    container_name: app_blue
+    environment:
+      - APP_POOL=blue
+      - RELEASE_ID=${RELEASE_ID_BLUE}
+    expose:
+      - "3000"
+    ports:
+     - "${PORT_BLUE}:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+    restart: always
+
+  app_green:
+    image: ${GREEN_IMAGE}
+    platform: linux/amd64
+    container_name: app_green
+    environment:
+      - APP_POOL=green
+      - RELEASE_ID=${RELEASE_ID_GREEN}
+    expose:
+      - "3000"
+    ports:
+     - "${PORT_GREEN}:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+    restart: always
+
+networks:
+  default:
+    name: bluegreen_net
