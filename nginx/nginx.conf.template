@@ -1,35 +1,54 @@
-# Combined upstream: blue = main, green = backup
-    server app_blue:3000 max_fails=1 fail_timeout=3s;
-    # 'app_green' acts as the backup server for blue-green deployments; traffic is routed here only if 'app_blue' is unavailable.
-    server app_green:3000 backup;
-    server app_blue:3000 max_fails=1 fail_timeout=3s;
-    server app_green:3000 backup;
+resolver 127.0.0.11 valid=10s ipv6=off;
 
+upstream app_pool {
+    # Dynamic primary/backup assignment based on ACTIVE_POOL
+    # Backup flag is injected via environment variables
+    server app_blue:3000 max_fails=1 fail_timeout=3s ${BLUE_BACKUP};
+    server app_green:3000 max_fails=1 fail_timeout=3s ${GREEN_BACKUP};
+    
+    keepalive 32;
+}
 
 server {
     listen 80;
+    
+    # Proxy headers setup
     proxy_set_header Host $host;
-    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    
+    # Connection persistence
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    
+    # Failover timing configuration
+    proxy_connect_timeout 500ms;
+    proxy_send_timeout 1s;
+    proxy_read_timeout 1s;
+    
+    # Upstream retry behavior
+    proxy_next_upstream error timeout http_500 http_502 http_503 http_504 non_idempotent;
+    proxy_next_upstream_tries 2;
+    proxy_next_upstream_timeout 2s;
+    
+    # Preserve application headers
+    proxy_pass_header X-App-Pool;
+    proxy_pass_header X-Release-Id;
+    
+    # Buffering settings
+    proxy_buffering off;
+    proxy_request_buffering on;
 
     location / {
-        proxy_pass_header X-App-Pool;
-        proxy_pass_header X-Release-Id;
-        proxy_connect_timeout 2s;
-        proxy_read_timeout 3s;
-        proxy_next_upstream error timeout http_500 http_502 http_503 http_504;
-        proxy_next_upstream_tries 2;
         proxy_pass http://app_pool;
-    }
-    # Optional but explicit – proxy /version to same upstream
-    location /version {
-        proxy_pass_header X-App-Pool;
-        proxy_pass_header X-Release-Id;
-        proxy_pass http://app_pool;
-    }
-        add_header Content-Type text/plain;
-        return 200 "nginx alive\n";
-    }
-    location /healthz {
-        return 200 "nginx alive\n";
     }
 
+    location /healthz {
+        proxy_pass http://app_pool/healthz;
+    }
+    
+    location /version {
+        proxy_pass http://app_pool/version;
+    }
+}

@@ -1,59 +1,60 @@
 # v2+ says no need to declare the version
 
 services:
-  nginx:
-    image: nginx:latest
-    container_name: nginx
-    ports:
-    - "${NGINX_PORT}:80"
-    environment:
-      - ACTIVE_POOL=${ACTIVE_POOL}
-      - RELEASE_ID_BLUE=${RELEASE_ID_BLUE}
-      - RELEASE_ID_GREEN=${RELEASE_ID_GREEN}
-    volumes:
-      - ./nginx/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
-    depends_on:
-      - app_blue
-     #   condition: service_healthy
-      - app_green
-      #  condition: service_healthy
-    restart: always
-
   app_blue:
     image: ${BLUE_IMAGE}
-    platform: linux/amd64
     container_name: app_blue
     environment:
-      - APP_POOL=blue
-      - RELEASE_ID=${RELEASE_ID_BLUE}
+      APP_POOL: blue
+      RELEASE_ID: ${RELEASE_ID_BLUE}
+      PORT: 3000
     expose:
       - "3000"
     ports:
-     - "${PORT_BLUE}:3000"
+      - "${PORT_BLUE}:3000"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:3000/healthz"]
       interval: 5s
       timeout: 2s
       retries: 3
-    restart: always
+      start_period: 5s
 
   app_green:
     image: ${GREEN_IMAGE}
-    platform: linux/amd64
     container_name: app_green
     environment:
-      - APP_POOL=green
-      - RELEASE_ID=${RELEASE_ID_GREEN}
+      APP_POOL: green
+      RELEASE_ID: ${RELEASE_ID_GREEN}
+      PORT: 3000
     expose:
       - "3000"
     ports:
-     - "${PORT_GREEN}:3000"
+      - "${PORT_GREEN}:3000"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:3000/healthz"]
       interval: 5s
       timeout: 2s
       retries: 3
-    restart: always
+      start_period: 5s
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: nginx
+    ports:
+      - "${NGINX_PORT}:80"
+    environment:
+      ACTIVE_POOL: ${ACTIVE_POOL:-blue}
+      NGINX_ENVSUBST_TEMPLATE_SUFFIX: ".template"
+      NGINX_ENVSUBST_OUTPUT_DIR: "/etc/nginx/conf.d"
+      NGINX_ENVSUBST_TEMPLATE_DIR: "/etc/nginx/templates"
+    volumes:
+      - ./nginx/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./nginx/setup-pool.sh:/docker-entrypoint.d/05-setup-pool.envsh:ro
+    depends_on:
+      app_blue:
+        condition: service_started
+      app_green:
+        condition: service_started
 
 networks:
   default:
