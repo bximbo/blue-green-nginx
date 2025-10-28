@@ -3,6 +3,8 @@
 .env.*
 !.env.example
 
+#keys
+*.pem
 
 # Editor/OS files
 .vscode/
