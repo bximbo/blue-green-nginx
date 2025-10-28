@@ -208,4 +208,4 @@ All conditions verified and PASS against the grader.
 Pre-built Node.js images:
 [yimikaade/wonderful:devops-stage-two](https://hub.docker.com/r/yimikaade/wonderful)
 
-Implementation and documentation by <Bimbo> for the DevOps Intern Stage 2 Task.
+Implementation and documentation by Bimbo for the DevOps Intern Stage 2 Task :)
