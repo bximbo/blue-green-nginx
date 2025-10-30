@@ -50,11 +50,35 @@ services:
     volumes:
       - ./nginx/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
       - ./nginx/setup-pool.sh:/docker-entrypoint.d/05-setup-pool.envsh:ro
+      - nginx_logs:/var/log/nginx
     depends_on:
       app_blue:
         condition: service_started
       app_green:
         condition: service_started
+
+  # --- Stage 3: Log-watcher sidecar ---
+  alert_watcher:
+    image: python:3.11-slim
+    container_name: alert_watcher
+    working_dir: /app
+    environment:
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
+      ERROR_RATE_THRESHOLD: ${ERROR_RATE_THRESHOLD:-2}
+      WINDOW_SIZE: ${WINDOW_SIZE:-200}
+      ALERT_COOLDOWN_SEC: ${ALERT_COOLDOWN_SEC:-300}
+      MAINTENANCE_MODE: ${MAINTENANCE_MODE:-false}
+      NGINX_LOG_FILE: /logs/access_stage3.log
+    volumes:
+      - ./watcher.py:/app/watcher.py:ro
+      - ./requirements.txt:/app/requirements.txt:ro
+      - nginx_logs:/logs
+    command: bash -lc "pip install --no-cache-dir -r requirements.txt && python /app/watcher.py"
+    depends_on:
+      - nginx
+
+volumes:
+  nginx_logs:
 
 networks:
   default:
