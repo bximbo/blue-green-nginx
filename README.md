@@ -1,6 +1,6 @@
 # Blue-Green Deployment with Nginx Upstreams (Auto-Failover + Manual Toggle)
 
-This project implements a production-ready Blue/Green deployment pattern using Nginx upstream failover.
+This project implements a "production ready" Blue/Green deployment pattern using Nginx upstream failover.
 It provides seamless traffic switching between two identical Node.js services — blue and green — with zero downtime during failure or updates.
 
 ## Overview
@@ -217,7 +217,7 @@ These live in `.env` (real) and `.env.example` (safe to commit).
 - `SLACK_WEBHOOK_URL` — Slack Incoming Webhook (**set in real `.env` only**)
 - `ERROR_RATE_THRESHOLD` — percent 5xx to trigger alert (default `2`)
 - `WINDOW_SIZE` — sliding window size in requests (default `200`)
-- `ALERT_COOLDOWN_SEC` — rate‑limit for repeated alerts (default `300`)
+- `ALERT_COOLDOWN_SEC` — rate-limit for repeated alerts (default `300`)
 - `MAINTENANCE_MODE` — `true` to suppress alerts for planned toggles
 - **`LATENCY_THRESHOLD_MS`** — average response time in milliseconds before a **High Latency Alert** is sent
 - **`DOWNTIME_THRESHOLD_SEC`** — time in seconds to wait before triggering a **Container Down Alert**
@@ -248,6 +248,72 @@ The watcher computes rolling averages and error rates to detect:
 - Excessive 5xx errors
 - Rising latency trends
 - Pool downtime beyond a configured window
+
+---
+
+##  How to Check Logs
+
+You can view all Nginx and watcher logs directly from your EC2 instance.
+
+### 1️ View Nginx access logs
+To check the most recent Nginx structured logs:
+
+```bash
+docker exec -it nginx sh -c "tail -n 20 /var/log/nginx/access_stage3.log"
+```
+
+Each line shows details like:
+```json
+{"time_local":"31/Oct/2025:09:08:19 +0000","pool":"blue","release":"1.0.0","upstream_status":"200", ...}
+```
+
+---
+
+### 2️ View the shared log volume (Nginx + Watcher)
+Your logs are stored in a shared Docker volume called `blue-green-nginx_nginx_logs`.  
+To inspect it directly:
+
+```bash
+docker run --rm -it -v blue-green-nginx_nginx_logs:/data alpine sh -c "cd /data && ls -lh && echo '--- Last 20 lines ---' && tail -n 20 access_stage3.log"
+```
+
+This displays the same file that both Nginx and the watcher read and write to in real time.
+
+---
+
+### 3️ View watcher logs
+To check what the watcher is currently detecting or sending to Slack:
+
+```bash
+docker logs alert_watcher | tail -n 20
+```
+
+If you want to stream logs live, use:
+```bash
+docker logs -f alert_watcher
+```
+
+---
+
+### 4️⃣ Optional — Persist logs on your EC2
+If you’d like to store logs on your host system (so you can view them with normal file commands):
+
+1. Create a folder:
+   ```bash
+   mkdir -p ~/blue-green-nginx/logs/nginx
+   ```
+2. Update `docker-compose.yml` volumes:
+   ```yaml
+   - ./logs/nginx:/var/log/nginx
+   ```
+Then you can view logs directly with:
+```bash
+tail -n 20 ~/blue-green-nginx/logs/nginx/access_stage3.log
+```
+
+---
+
+These commands help you confirm real-time activity, verify structured log formats, and debug watcher alerts easily.
 
 ---
 
@@ -308,4 +374,4 @@ This version extends the Stage 3 system with **comprehensive Slack observability
 Pre-built Node.js images:
 [yimikaade/wonderful:devops-stage-two](https://hub.docker.com/r/yimikaade/wonderful)
 
-Implementation and documentation by <your-name> for the DevOps Intern Stage 2 Task.
+Implementation and documentation by Bimbo for the DevOps Intern Stage 2 now upgraded for stage 3 Task.
