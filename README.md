@@ -374,4 +374,4 @@ This version extends the Stage 3 system with **comprehensive Slack observability
 Pre-built Node.js images:
 [yimikaade/wonderful:devops-stage-two](https://hub.docker.com/r/yimikaade/wonderful)
 
-Implementation and documentation by Bimbo for the DevOps Intern Stage 2 now upgraded for stage 3 Task.
+Implementation and documentation by Bimbo for the DevOps Intern Stage 2 now upgraded for stage 3 Task :)
