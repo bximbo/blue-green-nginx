@@ -66,7 +66,7 @@ Use `.env.example` as a template and create your own `.env` when deploying.
 ### Steps
 ```
 # Clone repo
-git clone [https://github.com/<your-username>/blue-green-nginx.git](https://github.com/bximbo/blue-green-nginx.git)
+git clone https://github.com/bximbo/blue-green-nginx.git
 cd blue-green-nginx
 
 # Copy example env and configure if needed
