@@ -72,6 +72,8 @@ cd blue-green-nginx
 # Copy example env and configure if needed
 cp .env.example .env
 
+# Insert your webhook in SLACK_WEBHOOK_URL
+
 # Start all containers
 sudo docker compose up -d
 
@@ -126,10 +128,12 @@ cd blue-green-nginx
 cp .env.example .env
 nano .env   # edit values if necessary
 
-# 5. Run deployment
+# 5. Insert your webhook in SLACK_WEBHOOK_URL
+
+# 6. Run deployment
 sudo docker compose up -d
 
-# 6. Verify containers
+# 7. Verify containers
 sudo docker ps
 ```
 
