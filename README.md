@@ -119,7 +119,7 @@ sudo systemctl enable docker
 sudo systemctl start docker
 
 # 3. Clone your repository
-git clone https://github.com/<your-username>/blue-green-nginx.git
+git clone  https://github.com/bximbo/blue-green-nginx.git
 cd blue-green-nginx
 
 # 4. Create and configure .env
